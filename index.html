@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b3d20">
+<title>Tombola</title>
+<style>
+  :root { --felt1: #1f7a45; --felt2: #0b3d20; --cream: #fff6dc; --red: #c62828; --ink: #2b1a10; --gold: #ffd23f; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; min-height: 100%;
+    background: radial-gradient(circle at 50% 0, var(--felt1), var(--felt2)) fixed;
+    color: #fff; font-family: "Trebuchet MS", system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .screen { display: none; max-width: 760px; margin: 0 auto; padding: 14px 12px calc(28px + env(safe-area-inset-bottom)); }
+  .screen.on { display: block; }
+  h1 { font: 700 46px Georgia, serif; margin: 22px 0 4px; text-align: center; color: var(--gold); text-shadow: 3px 3px 0 var(--red); }
+  h3 { margin: 6px 0 10px; }
+  .sub { text-align: center; opacity: .85; margin: 0 0 22px; }
+  .btn {
+    display: block; width: 100%; padding: 15px; margin: 10px 0; border: 0; border-radius: 14px;
+    font: 700 18px "Trebuchet MS", system-ui; background: var(--gold); color: #3a2500;
+    box-shadow: 0 4px 0 #a07800; cursor: pointer;
+  }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #a07800; }
+  .btn.red { background: var(--red); color: #fff; box-shadow: 0 4px 0 #7a1010; }
+  .btn.ghost { background: rgba(255,255,255,.13); color: #fff; box-shadow: none; }
+  .btn:disabled { opacity: .4; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  label { display: block; margin: 14px 0 6px; font-weight: 700; }
+  input[type=text] {
+    width: 100%; padding: 14px; border-radius: 12px; border: 2px solid #fff3; background: #0006;
+    color: #fff; font-size: 20px; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+  .seg button { flex: 1; padding: 12px 4px; border-radius: 10px; border: 2px solid #fff4; background: #0004; color: #fff; font-weight: 700; font-size: 16px; }
+  .seg button.sel { background: var(--gold); color: #3a2500; border-color: var(--gold); }
+  .panel { background: #0005; border-radius: 16px; padding: 14px; margin: 12px 0; }
+  .code { font: 700 34px ui-monospace, Menlo, Consolas, monospace; letter-spacing: 4px; text-align: center; color: var(--gold); }
+  .small { font-size: 13px; opacity: .75; text-align: center; margin: 6px 0; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; font-weight: 700; }
+  .toggle input { width: 24px; height: 24px; }
+
+  /* ---------- cartella ---------- */
+  .card {
+    background: var(--cream); border: 4px solid var(--red); border-radius: 12px; padding: 6px;
+    display: grid; grid-template-columns: repeat(9, 1fr); gap: 3px; box-shadow: 0 6px 16px #0008;
+  }
+  .cell {
+    aspect-ratio: 1 / 1.1; border-radius: 6px; background: #fff; display: flex; align-items: center; justify-content: center;
+    font: 700 clamp(15px, 4.8vw, 30px) Georgia, serif; color: var(--ink); position: relative; user-select: none; -webkit-user-select: none;
+  }
+  .cell.empty { background: repeating-linear-gradient(45deg, #f3e3b8, #f3e3b8 4px, #efd9a3 4px, #efd9a3 8px); }
+  .cell.num { cursor: pointer; }
+  .cell.marked::after {
+    content: ""; position: absolute; inset: 10%; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ff7b7b, #b71c1c); opacity: .8; box-shadow: 0 2px 3px #0006;
+  }
+  .cell span { position: relative; z-index: 1; }
+  .cell.marked { color: #fff; text-shadow: 0 1px 2px #0008; }
+  .cell.bad { animation: shake .3s; background: #ffcdd2; }
+  @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  .cell.win { outline: 3px solid var(--gold); }
+  .cell select {
+    width: 100%; height: 100%; border: 0; background: transparent; padding: 0;
+    font: 700 16px Georgia, serif; color: var(--ink); text-align: center; text-align-last: center;
+    appearance: none; -webkit-appearance: none; cursor: pointer;
+  }
+  .cell.pick.has { background: #ffe9a8; }
+  .cell.pick.off { background: #e8dcc0; }
+  .rowinfo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; text-align: center; font-weight: 700; }
+  .rowinfo .ok { color: #7CF5C4; }
+  .rowinfo .no { color: #ffb3b3; }
+
+  /* ---------- estrazione ---------- */
+  .big { font: 700 min(34vw, 180px)/1 Georgia, serif; text-align: center; color: var(--gold); text-shadow: 4px 4px 0 var(--red); margin: 4px 0; }
+  .mid { font: 700 min(18vw, 84px)/1 Georgia, serif; text-align: center; color: var(--gold); text-shadow: 3px 3px 0 var(--red); }
+  .smorfia { text-align: center; font-size: 20px; font-style: italic; min-height: 26px; }
+  .meta { display: flex; justify-content: space-between; opacity: .9; font-weight: 700; font-size: 15px; }
+  .bar { height: 8px; background: #0006; border-radius: 4px; overflow: hidden; margin: 8px 0; }
+  .bar > div { height: 100%; background: var(--gold); width: 0; transition: width .25s linear; }
+  .lastfew { text-align: center; opacity: .85; font-weight: 700; letter-spacing: 1px; }
+  .board { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; }
+  .board div { background: #0005; border-radius: 5px; text-align: center; padding: 5px 0; font: 700 clamp(11px, 3vw, 18px) Georgia, serif; color: #ffffff70; }
+  .board div.on { background: var(--cream); color: var(--red); }
+  .board div.last { background: var(--gold); color: #3a2500; }
+
+  /* ---------- premi ---------- */
+  .prizes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .prizes button {
+    padding: 12px 2px; border-radius: 12px; border: 0; font: 700 clamp(10px, 3.1vw, 16px) "Trebuchet MS", system-ui;
+    background: #fff; color: var(--red); box-shadow: 0 3px 0 #0006; cursor: pointer;
+  }
+  .prizes button.done { background: #7CF5C4; color: #063; }
+  .prizes button small { display: block; font-size: 11px; font-weight: 400; color: #333; margin-top: 3px; word-break: break-word; }
+
+  .overlay { position: fixed; inset: 0; background: #000c; display: none; align-items: center; justify-content: center; padding: 20px; z-index: 10; }
+  .overlay.on { display: flex; }
+  .dialog { background: var(--felt2); border: 3px solid var(--gold); border-radius: 18px; padding: 20px; max-width: 440px; width: 100%; text-align: center; }
+  .dialog h2 { font: 700 46px Georgia, serif; color: var(--gold); margin: 4px 0; text-shadow: 3px 3px 0 var(--red); }
+  .chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 12px 0; }
+  .chips span { background: var(--cream); color: var(--red); font: 700 26px Georgia, serif; border-radius: 50%; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: #000d; padding: 12px 18px; border-radius: 12px; display: none; z-index: 20; font-weight: 700; text-align: center; max-width: 90vw; }
+</style>
+</head>
+<body>
+
+<!-- ================= HOME ================= -->
+<section class="screen on" id="home">
+  <h1>TOMBOLA</h1>
+  <p class="sub">Il banco estrae, ognuno gioca sul suo telefono</p>
+  <button class="btn" id="goBanco">🎙️ SONO IL BANCO</button>
+  <button class="btn red" id="goPlayer">🎟️ GIOCO CON UNA CARTELLA</button>
+  <button class="btn ghost" id="resumeBanco" style="display:none">Riprendi la partita come banco</button>
+  <button class="btn ghost" id="resumePlayer" style="display:none">Riprendi la mia cartella</button>
+  <div class="panel small" style="text-align:left">
+    Come funziona: il banco crea la partita e legge il <b>codice</b> ai giocatori. Tutti i telefoni con lo stesso
+    codice estraggono gli stessi numeri nello stesso momento, senza internet tra di loro.
+    Tieni l'ora del telefono in <b>automatico</b>.
+  </div>
+</section>
+
+<!-- ================= BANCO: impostazioni ================= -->
+<section class="screen" id="bancoSetup">
+  <h3>🎙️ Nuova partita</h3>
+  <label>Un numero ogni</label>
+  <div class="seg" id="segInterval"></div>
+  <label>L'estrazione inizia tra</label>
+  <div class="seg" id="segLead"></div>
+  <div class="panel">
+    <div class="toggle">Voce del banco <input type="checkbox" id="bVoice" checked></div>
+    <div class="toggle">Dire anche la smorfia <input type="checkbox" id="bSmorfia" checked></div>
+    <div class="small" id="voiceInfo"></div>
+  </div>
+  <button class="btn" id="createGame">CREA PARTITA</button>
+  <button class="btn ghost" data-home>Indietro</button>
+</section>
+
+<!-- ================= BANCO: partita ================= -->
+<section class="screen" id="banco">
+  <div class="panel">
+    <div class="small">CODICE PARTITA</div>
+    <div class="code" id="bCode"></div>
+    <div class="row"><button class="btn ghost" id="bShare">Condividi</button><button class="btn ghost" id="bSayCode">Leggi il codice</button></div>
+  </div>
+  <div class="panel">
+    <div class="meta"><span id="bCount"></span><span id="bNext"></span></div>
+    <div class="big" id="bNum">–</div>
+    <div class="smorfia" id="bSmorfiaTxt"></div>
+    <div class="bar"><div id="bBar"></div></div>
+    <div class="lastfew" id="bLast"></div>
+  </div>
+  <h3>Premi</h3>
+  <div class="prizes" id="bPrizes"></div>
+  <p class="small">Quando un giocatore mostra la vincita sul suo telefono, tocca il premio e scrivi il suo nome: il banco lo annuncia.</p>
+  <h3>Tabellone</h3>
+  <div class="board" id="bBoard"></div>
+  <div class="panel">
+    <div class="toggle">Voce <input type="checkbox" id="bVoice2"></div>
+    <div class="toggle">Smorfia <input type="checkbox" id="bSmorfia2"></div>
+    <button class="btn ghost" id="bRepeat">Ripeti l'ultimo numero</button>
+    <button class="btn red" id="bEnd">Termina partita</button>
+  </div>
+</section>
+
+<!-- ================= GIOCATORE: entra ================= -->
+<section class="screen" id="join">
+  <h3>🎟️ Entra in partita</h3>
+  <label>Il tuo nome da gioco</label>
+  <input type="text" id="pName" maxlength="12" autocomplete="off" placeholder="ES. MARCO">
+  <label>Codice della partita</label>
+  <input type="text" id="pCode" maxlength="9" autocomplete="off" autocapitalize="characters" placeholder="ABCD-EFG">
+  <button class="btn" id="joinGo">AVANTI</button>
+  <button class="btn ghost" data-home>Indietro</button>
+</section>
+
+<!-- ================= GIOCATORE: cartella ================= -->
+<section class="screen" id="cardSetup">
+  <h3>Scegli la tua cartella</h3>
+  <div class="seg" id="segCard">
+    <button data-k="rnd" class="sel">A CASO</button>
+    <button data-k="custom">LA FACCIO IO</button>
+  </div>
+  <div id="rndBox">
+    <div class="card" id="rndCard" style="margin-top:14px"></div>
+    <button class="btn ghost" id="rndAgain">🔄 Un'altra cartella</button>
+  </div>
+  <div id="customBox" style="display:none">
+    <p class="small">Ogni colonna ha i suoi numeri (1–9, 10–19 … 80–90). Servono 5 numeri per riga, 15 in tutto.</p>
+    <div class="card" id="customCard"></div>
+    <div class="rowinfo" id="rowInfo"></div>
+    <button class="btn ghost" id="customClear">Svuota</button>
+  </div>
+  <button class="btn" id="cardUse">GIOCA CON QUESTA CARTELLA</button>
+</section>
+
+<!-- ================= GIOCATORE: partita ================= -->
+<section class="screen" id="play">
+  <div class="meta"><span id="pWho"></span><span id="pCodeShow"></span></div>
+  <div class="panel">
+    <div class="meta"><span id="pCount"></span><span id="pNext"></span></div>
+    <div class="mid" id="pNum">–</div>
+    <div class="smorfia" id="pSmorfiaTxt"></div>
+    <div class="lastfew" id="pLast"></div>
+  </div>
+  <div class="card" id="playCard"></div>
+  <p class="small">Tocca i numeri usciti per segnarli. Tocca di nuovo per togliere il segno.</p>
+  <div class="prizes" id="pPrizes"></div>
+  <button class="btn ghost" id="pBoardToggle">Mostra i numeri usciti</button>
+  <div class="board" id="pBoard" style="display:none"></div>
+  <div class="panel">
+    <div class="toggle">Annuncia a voce le mie vincite <input type="checkbox" id="pVoiceWin" checked></div>
+    <div class="toggle">Leggi anche i numeri estratti <input type="checkbox" id="pVoiceNum"></div>
+    <button class="btn ghost" id="pChangeCard">Cambia cartella</button>
+    <button class="btn red" id="pExit">Esci dalla partita</button>
+  </div>
+</section>
+
+<div class="overlay" id="ov"><div class="dialog" id="ovBox"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// =====================================================================
+//  TOMBOLA — banco + giocatori, senza server
+//  Tutti i telefoni con lo stesso codice calcolano la stessa estrazione:
+//  il codice contiene l'ora di inizio, l'intervallo e il "seme" dei numeri.
+// =====================================================================
+
+const $ = id => document.getElementById(id);
+const PRIZES = [['AMBO', 2], ['TERNO', 3], ['QUATERNA', 4], ['CINQUINA', 5], ['TOMBOLA', 15]];
+const INTERVALS = [6, 8, 10, 12];          // secondi tra un numero e l'altro
+const LEADS = [1, 2, 3, 5];               // minuti prima che inizi l'estrazione
+const ALPH = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // niente I, O, 0, 1 per non confondersi
+const DAY = 86400000;
+
+// Smorfia napoletana (in italiano)
+const SMORFIA = [null,
+  "l'Italia", 'la bambina', 'la gatta', 'il maiale', 'la mano', 'quella che guarda per terra', 'il vasetto', 'la Madonna', 'la figliolanza', 'i fagioli',
+  'i topolini', 'i soldati', "Sant'Antonio", "l'ubriaco", 'il ragazzo', 'il sedere', 'la disgrazia', 'il sangue', 'la risata', 'la festa',
+  'la donna nuda', 'il pazzo', 'lo scemo', 'le guardie', 'Natale', 'Nannarella', 'il vaso da notte', 'il seno', 'il padre dei bambini', 'le palle del tenente',
+  'il padrone di casa', 'il capitone', 'gli anni di Cristo', 'la testa', "l'uccellino", 'le nacchere', 'il monaco', 'le botte', 'la corda al collo', 'la noia',
+  'il coltello', 'il caffè', 'la donna al balcone', 'le prigioni', 'il vino buono', 'i soldi', 'il morto', 'il morto che parla', 'il pezzo di carne', 'il pane',
+  'il giardino', 'la mamma', 'il vecchio', 'il cappello', 'la musica', 'la caduta', 'il gobbo', 'il pacco', 'i peli', 'si lamenta',
+  'il cacciatore', 'il morto ammazzato', 'la sposa', 'la marsina', 'il pianto', 'le due zitelle', 'il polpo nella chitarra', 'la zuppa cotta', 'sottosopra', 'il palazzo',
+  "l'uomo di niente", 'la meraviglia', "l'ospedale", 'la grotta', 'Pulcinella', 'la fontana', 'i diavoli', 'la bella ragazza', 'il ladro', 'la bocca',
+  'i fiori', 'la tavola imbandita', 'il maltempo', 'la chiesa', 'le anime del purgatorio', 'la bottega', 'i pidocchi', 'i caciocavalli', 'la vecchia', 'la paura',
+];
+
+// ---------- utilità ----------
+function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); window.scrollTo(0, 0); }
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 2400); }
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtCode = c => c.slice(0, 4) + '-' + c.slice(4);
+const mmss = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+
+// ---------- voce (sintesi vocale del telefono) ----------
+let voice = null;
+function pickVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const it = speechSynthesis.getVoices().filter(v => /^it/i.test(v.lang));
+  // preferenza alle voci installate sul telefono (non passano da internet)
+  voice = it.find(v => v.localService) || it[0] || null;
+  const info = $('voiceInfo');
+  if (info) info.textContent = voice ? `Voce: ${voice.name}${voice.localService ? '' : ' (online)'}` : 'Nessuna voce italiana trovata su questo dispositivo';
+}
+if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function say(text, interrupt = true) {
+  if (!('speechSynthesis' in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'it-IT'; if (voice) u.voice = voice; u.rate = 0.95;
+  if (interrupt) speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+// schermo sempre acceso durante la partita
+let wakeLock = null;
+async function keepAwake() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {} }
+
+// ---------- codice partita ----------
+// 6 caratteri = 30 bit: ora di inizio (a passi di 10 s nel giorno), intervallo, seme. Il 7° è un controllo.
+function checksum(s) { let a = 7; for (const c of s) a = (a * 31 + ALPH.indexOf(c) + 3) % 1021; return ALPH[a % 32]; }
+function encode(t10, iv, seed) {
+  let v = (t10 * 4 + iv) * 16384 + seed, s = '';
+  for (let i = 0; i < 6; i++) { s = ALPH[v % 32] + s; v = Math.floor(v / 32); }
+  return s + checksum(s);
+}
+function decode(raw) {
+  const code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (code.length !== 7 || [...code].some(c => ALPH.indexOf(c) < 0)) return null;
+  if (checksum(code.slice(0, 6)) !== code[6]) return null;
+  let v = 0;
+  for (const c of code.slice(0, 6)) v = v * 32 + ALPH.indexOf(c);
+  const seed = v % 16384; v = Math.floor(v / 16384);
+  const iv = v % 4, t10 = Math.floor(v / 4);
+  if (t10 >= 8640) return null;
+  // il giorno non è nel codice: si prende l'inizio più vicino ad adesso
+  const now = Date.now(), base = Math.floor(now / DAY) * DAY + t10 * 10000;
+  let start = base;
+  for (const c of [base - DAY, base + DAY]) if (Math.abs(c - now) < Math.abs(start - now)) start = c;
+  return { code, start, interval: INTERVALS[iv], seed, order: drawOrder(seed) };
+}
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function drawOrder(seed) {
+  const rnd = mulberry32(seed * 2654435761 ^ 0x5bd1e995);
+  const a = Array.from({ length: 90 }, (_, i) => i + 1);
+  for (let i = 89; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+const calledCount = (g, now = Date.now()) => now < g.start ? 0 : Math.min(90, Math.floor((now - g.start) / (g.interval * 1000)) + 1);
+const calledList = g => g.order.slice(0, calledCount(g));
+const gameOverAt = g => g.start + 90 * g.interval * 1000;
+
+// ---------- tabellone ----------
+function buildBoard(el) { el.innerHTML = Array.from({ length: 90 }, (_, i) => `<div data-n="${i + 1}">${i + 1}</div>`).join(''); }
+function paintBoard(el, called) {
+  const set = new Set(called), last = called[called.length - 1];
+  el.querySelectorAll('div').forEach(d => {
+    const n = +d.dataset.n;
+    d.classList.toggle('on', set.has(n));
+    d.classList.toggle('last', n === last);
+  });
+}
+function statusInto(g, ids) {
+  const now = Date.now(), n = calledCount(g, now), called = g.order.slice(0, n);
+  if (n === 0) {
+    $(ids.count).textContent = 'IN ATTESA';
+    $(ids.next).textContent = `inizia tra ${mmss(g.start - now)}`;
+    $(ids.num).textContent = '–'; $(ids.smorfia).textContent = ''; $(ids.last).textContent = '';
+    if (ids.bar) $(ids.bar).style.width = '0%';
+  } else {
+    const last = called[n - 1];
+    $(ids.count).textContent = `ESTRATTI ${n}/90`;
+    $(ids.next).textContent = n < 90 ? `prossimo tra ${mmss(g.start + n * g.interval * 1000 - now)}` : 'ESTRAZIONE FINITA';
+    $(ids.num).textContent = last;
+    $(ids.smorfia).textContent = SMORFIA[last];
+    $(ids.last).textContent = called.slice(-6, -1).reverse().join(' · ');
+    if (ids.bar) $(ids.bar).style.width = (n < 90 ? ((now - g.start) % (g.interval * 1000)) / (g.interval * 10) : 100) + '%';
+  }
+  return called;
+}
+
+// ================= BANCO =================
+let B = null, bTimer = null, bSpoken = 0;
+function segment(el, values, fmt, sel, onPick) {
+  el.innerHTML = values.map(v => `<button data-v="${v}" class="${v === sel ? 'sel' : ''}">${fmt(v)}</button>`).join('');
+  el.onclick = e => { const b = e.target.closest('button'); if (!b) return; el.querySelectorAll('button').forEach(x => x.classList.toggle('sel', x === b)); onPick(+b.dataset.v); };
+}
+let setupInterval = 10, setupLead = 2;
+segment($('segInterval'), INTERVALS, v => v + ' s', setupInterval, v => setupInterval = v);
+segment($('segLead'), LEADS, v => v + ' min', setupLead, v => setupLead = v);
+
+$('goBanco').onclick = () => { pickVoice(); show('bancoSetup'); };
+$('createGame').onclick = () => {
+  const start = Math.ceil((Date.now() + setupLead * 60000) / 10000) * 10000;
+  const t10 = Math.floor((start % DAY) / 10000);
+  const code = encode(t10, INTERVALS.indexOf(setupInterval), Math.floor(Math.random() * 16384));
+  B = { code, prizes: {}, voice: $('bVoice').checked, smorfia: $('bSmorfia').checked };
+  store.set('tombola_banco', B);
+  bSpoken = 0;
+  startBanco();
+  if (B.voice) say(`Benvenuti alla tombola! Il codice della partita è: ${[...code].join(', ')}`);
+};
+function startBanco() {
+  const g = decode(B.code);
+  if (!g) { toast('Codice non valido'); return; }
+  B.g = g;
+  $('bCode').textContent = fmtCode(B.code);
+  $('bVoice2').checked = B.voice; $('bSmorfia2').checked = B.smorfia;
+  buildBoard($('bBoard'));
+  renderBancoPrizes();
+  show('banco');
+  keepAwake();
+  bSpoken = calledCount(g);         // se si riprende la partita non si rileggono i numeri vecchi
+  clearInterval(bTimer);
+  bTimer = setInterval(tickBanco, 250);
+  tickBanco();
+}
+function announce(n, interrupt = true) {
+  if (!B.voice) return;
+  say(B.smorfia ? `${n}. ${SMORFIA[n]}` : `${n}`, interrupt);
+}
+function tickBanco() {
+  const g = B.g, n = calledCount(g);
+  const called = statusInto(g, { count: 'bCount', next: 'bNext', num: 'bNum', smorfia: 'bSmorfiaTxt', last: 'bLast', bar: 'bBar' });
+  if (n > bSpoken) {
+    if (bSpoken === 0 && B.voice) say('Si comincia!');
+    bSpoken = n;
+    announce(g.order[n - 1], n !== 1);   // il primo numero arriva dopo "Si comincia!"
+    if (n === 90) setTimeout(() => B.voice && say('Estrazione finita!', false), 4000);
+  }
+  paintBoard($('bBoard'), called);
+}
+function renderBancoPrizes() {
+  $('bPrizes').innerHTML = PRIZES.map(([p]) => {
+    const w = B.prizes[p];
+    return `<button data-p="${p}" class="${w ? 'done' : ''}">${p}${w ? `<small>${esc(w)}</small>` : ''}</button>`;
+  }).join('');
+}
+$('bPrizes').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const p = b.dataset.p;
+  openDialog(`
+    <h2>${p}</h2>
+    <p>Chi ha vinto? Controlla il suo telefono e il tabellone.</p>
+    <input type="text" id="winName" maxlength="12" placeholder="NOME" value="${esc(B.prizes[p] || '')}">
+    <button class="btn" id="winOk">ANNUNCIA</button>
+    ${B.prizes[p] ? '<button class="btn ghost" id="winDel">Togli assegnazione</button>' : ''}
+    <button class="btn ghost" id="winNo">Annulla</button>`);
+  $('winName').focus();
+  $('winOk').onclick = () => {
+    const name = $('winName').value.trim().toUpperCase();
+    if (!name) { toast('Scrivi il nome del vincitore'); return; }
+    B.prizes[p] = name; store.set('tombola_banco', { ...B, g: undefined });
+    renderBancoPrizes(); closeDialog();
+    if (B.voice) say(`${p}! Vince ${name}!`);
+  };
+  if ($('winDel')) $('winDel').onclick = () => { delete B.prizes[p]; store.set('tombola_banco', { ...B, g: undefined }); renderBancoPrizes(); closeDialog(); };
+  $('winNo').onclick = closeDialog;
+};
+$('bVoice2').onchange = e => { B.voice = e.target.checked; store.set('tombola_banco', { ...B, g: undefined }); };
+$('bSmorfia2').onchange = e => { B.smorfia = e.target.checked; store.set('tombola_banco', { ...B, g: undefined }); };
+$('bRepeat').onclick = () => { const n = calledCount(B.g); if (n) { const v = B.voice; B.voice = true; announce(B.g.order[n - 1]); B.voice = v; } };
+$('bSayCode').onclick = () => say(`Il codice della partita è: ${[...B.code].join(', ')}`);
+$('bShare').onclick = async () => {
+  const txt = `Tombola! Codice partita: ${fmtCode(B.code)}\n${location.href.split('?')[0]}`;
+  try { if (navigator.share) await navigator.share({ text: txt }); else { await navigator.clipboard.writeText(txt); toast('Codice copiato'); } } catch (e) {}
+};
+$('bEnd').onclick = () => {
+  if (!confirm('Terminare la partita? Il codice non servirà più.')) return;
+  clearInterval(bTimer); bTimer = null; store.del('tombola_banco'); B = null; if (window.speechSynthesis) speechSynthesis.cancel(); show('home'); refreshHome();
+};
+
+// ================= GIOCATORE =================
+let P = null, G = null, pTimer = null, pSpoken = 0;
+const colRange = c => c === 0 ? [1, 9] : c === 8 ? [80, 90] : [c * 10, c * 10 + 9];
+
+// cartella casuale con le regole vere: 5 numeri per riga, ogni colonna da 1 a 3 numeri in ordine crescente
+function randomCard() {
+  for (;;) {
+    const counts = Array(9).fill(1);
+    let extra = 6;
+    while (extra > 0) { const c = Math.floor(Math.random() * 9); if (counts[c] < 3) { counts[c]++; extra--; } }
+    const grid = [0, 1, 2].map(() => Array(9).fill(0)), rowCount = [0, 0, 0];
+    const order = [...Array(9).keys()].sort((a, b) => counts[b] - counts[a] || Math.random() - 0.5);
+    let ok = true;
+    for (const c of order) {
+      const rows = [0, 1, 2].filter(r => rowCount[r] < 5).sort((a, b) => rowCount[a] - rowCount[b] || Math.random() - 0.5);
+      if (rows.length < counts[c]) { ok = false; break; }
+      rows.slice(0, counts[c]).forEach(r => { grid[r][c] = -1; rowCount[r]++; });
+    }
+    if (!ok || rowCount.some(n => n !== 5)) continue;
+    for (let c = 0; c < 9; c++) {
+      const [lo, hi] = colRange(c), pool = [];
+      for (let n = lo; n <= hi; n++) pool.push(n);
+      const pick = [];
+      while (pick.length < counts[c]) pick.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      pick.sort((a, b) => a - b);
+      let k = 0;
+      for (let r = 0; r < 3; r++) if (grid[r][c] === -1) grid[r][c] = pick[k++];
+    }
+    return grid;
+  }
+}
+const cardNumbers = card => card.flat().filter(n => n > 0);
+
+function renderCard(el, card, opts = {}) {
+  el.innerHTML = card.map((row, r) => row.map((n, c) => n > 0
+    ? `<div class="cell num${opts.marks && opts.marks.includes(n) ? ' marked' : ''}" data-n="${n}"><span>${n}</span></div>`
+    : `<div class="cell empty"></div>`).join('')).join('');
+}
+
+$('goPlayer').onclick = () => {
+  const last = store.get('tombola_name');
+  if (last) $('pName').value = last;
+  show('join');
+};
+$('joinGo').onclick = () => {
+  const name = $('pName').value.trim().toUpperCase();
+  if (!name) { toast('Scrivi il tuo nome da gioco'); return; }
+  const g = decode($('pCode').value);
+  if (!g) { toast('Codice non valido: controlla le lettere'); return; }
+  if (Date.now() > gameOverAt(g) + 30 * 60000) { toast('Questa partita è già finita'); return; }
+  store.set('tombola_name', name);
+  P = { name, code: g.code, card: null, marks: [], claimed: {} };
+  G = g;
+  openCardSetup();
+};
+
+// ---------- scelta della cartella ----------
+let rnd = null, custom = null, cardMode = 'rnd';
+function openCardSetup() {
+  rnd = randomCard();
+  custom = [0, 1, 2].map(() => Array(9).fill(0));
+  renderCard($('rndCard'), rnd);
+  renderCustom();
+  setCardMode('rnd');
+  show('cardSetup');
+}
+function setCardMode(k) {
+  cardMode = k;
+  $('segCard').querySelectorAll('button').forEach(b => b.classList.toggle('sel', b.dataset.k === k));
+  $('rndBox').style.display = k === 'rnd' ? '' : 'none';
+  $('customBox').style.display = k === 'custom' ? '' : 'none';
+  updateUseBtn();
+}
+$('segCard').onclick = e => { const b = e.target.closest('button'); if (b) setCardMode(b.dataset.k); };
+$('rndAgain').onclick = () => { rnd = randomCard(); renderCard($('rndCard'), rnd); };
+
+// cartella personalizzata: un menu per casella con i soli numeri della colonna,
+// senza quelli già scelti nelle altre righe della stessa colonna
+function renderCustom() {
+  const rowFill = custom.map(row => row.filter(n => n > 0).length);
+  let html = '';
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 9; c++) {
+    const v = custom[r][c], [lo, hi] = colRange(c);
+    const taken = new Set([0, 1, 2].filter(x => x !== r).map(x => custom[x][c]).filter(n => n > 0));
+    const full = !v && rowFill[r] >= 5;      // riga già con 5 numeri: le altre caselle restano vuote
+    let opts = `<option value="0">${full ? '' : '·'}</option>`;
+    if (!full) for (let n = lo; n <= hi; n++) if (!taken.has(n)) opts += `<option value="${n}"${n === v ? ' selected' : ''}>${n}</option>`;
+    html += `<div class="cell pick${v ? ' has' : ''}${full ? ' off' : ''}"><select data-r="${r}" data-c="${c}"${full ? ' disabled' : ''} aria-label="Riga ${r + 1} colonna ${c + 1}">${opts}</select></div>`;
+  }
+  $('customCard').innerHTML = html;
+  $('rowInfo').innerHTML = rowFill.map((n, i) => `<span class="${n === 5 ? 'ok' : 'no'}">Riga ${i + 1}: ${n}/5</span>`).join('');
+  updateUseBtn();
+}
+$('customCard').onchange = e => {
+  const s = e.target; if (s.tagName !== 'SELECT') return;
+  custom[+s.dataset.r][+s.dataset.c] = +s.value;
+  renderCustom();
+};
+$('customClear').onclick = () => { custom = [0, 1, 2].map(() => Array(9).fill(0)); renderCustom(); };
+const customValid = () => custom.every(row => row.filter(n => n > 0).length === 5);
+function updateUseBtn() { $('cardUse').disabled = cardMode === 'custom' && !customValid(); }
+
+$('cardUse').onclick = () => {
+  let card;
+  if (cardMode === 'rnd') card = rnd;
+  else {
+    if (!customValid()) { toast('Servono 5 numeri in ogni riga'); return; }
+    // in ogni colonna i numeri vanno dall'alto in basso in ordine crescente, come nelle cartelle vere
+    card = custom.map(row => row.slice());
+    for (let c = 0; c < 9; c++) {
+      const rows = [0, 1, 2].filter(r => card[r][c] > 0), vals = rows.map(r => card[r][c]).sort((a, b) => a - b);
+      rows.forEach((r, i) => card[r][c] = vals[i]);
+    }
+  }
+  P.card = card; P.marks = []; P.claimed = {};
+  savePlayer();
+  startPlay();
+};
+
+// ---------- partita del giocatore ----------
+function savePlayer() { store.set('tombola_player', P); }
+function startPlay() {
+  G = G || decode(P.code);
+  $('pWho').textContent = '🎟️ ' + P.name;
+  $('pCodeShow').textContent = fmtCode(P.code);
+  renderCard($('playCard'), P.card, { marks: P.marks });
+  renderPlayerPrizes();
+  buildBoard($('pBoard'));
+  show('play');
+  keepAwake();
+  pSpoken = calledCount(G);
+  clearInterval(pTimer);
+  pTimer = setInterval(tickPlayer, 300);
+  tickPlayer();
+}
+function tickPlayer() {
+  const called = statusInto(G, { count: 'pCount', next: 'pNext', num: 'pNum', smorfia: 'pSmorfiaTxt', last: 'pLast' });
+  if (called.length > pSpoken) { pSpoken = called.length; if ($('pVoiceNum').checked) say(`${called[called.length - 1]}`); }
+  if ($('pBoard').style.display !== 'none') paintBoard($('pBoard'), called);
+  $('pChangeCard').style.display = called.length === 0 ? '' : 'none';   // la cartella si cambia solo prima dell'inizio
+}
+$('playCard').onclick = e => {
+  const cell = e.target.closest('.cell.num'); if (!cell) return;
+  const n = +cell.dataset.n;
+  if (P.marks.includes(n)) { P.marks = P.marks.filter(x => x !== n); cell.classList.remove('marked'); savePlayer(); return; }
+  if (!calledList(G).includes(n)) {
+    cell.classList.remove('bad'); void cell.offsetWidth; cell.classList.add('bad');
+    setTimeout(() => cell.classList.remove('bad'), 400);
+    toast(`Il ${n} non è ancora uscito`);
+    return;
+  }
+  P.marks.push(n); cell.classList.add('marked'); savePlayer();
+  try { navigator.vibrate && navigator.vibrate(15); } catch (e) {}
+};
+function renderPlayerPrizes() {
+  $('pPrizes').innerHTML = PRIZES.map(([p]) => `<button data-p="${p}" class="${P.claimed[p] ? 'done' : ''}">${p}${P.claimed[p] ? '<small>✓</small>' : ''}</button>`).join('');
+}
+// verifica: contano solo i numeri segnati e davvero estratti
+function checkPrize(k) {
+  const called = new Set(calledList(G)), marked = P.marks.filter(n => called.has(n));
+  if (k === 15) return marked.length === 15 && cardNumbers(P.card).every(n => marked.includes(n)) ? { nums: cardNumbers(P.card) } : null;
+  for (let r = 0; r < 3; r++) {
+    const nums = P.card[r].filter(n => n > 0 && marked.includes(n));
+    if (nums.length >= k) return { row: r, nums: nums.slice(0, k) };
+  }
+  return null;
+}
+$('pPrizes').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const [p, k] = PRIZES.find(x => x[0] === b.dataset.p);
+  const res = checkPrize(k);
+  if (!res) {
+    toast(k === 15 ? 'Per la tombola devono essere segnati tutti i 15 numeri' : `Per ${p.toLowerCase()} servono ${k} numeri segnati sulla stessa riga`);
+    return;
+  }
+  P.claimed[p] = { nums: res.nums, at: calledCount(G) }; savePlayer(); renderPlayerPrizes();
+  document.querySelectorAll('#playCard .cell.num').forEach(c => c.classList.toggle('win', res.nums.includes(+c.dataset.n)));
+  openDialog(`
+    <h2>${p}!</h2>
+    <div style="font-size:26px;font-weight:700">${esc(P.name)}</div>
+    <div class="chips">${(k === 15 ? res.nums : res.nums).map(n => `<span>${n}</span>`).join('')}</div>
+    <p class="small">Verificato dopo ${calledCount(G)} numeri estratti · partita ${fmtCode(P.code)}<br>Mostra questo schermo al banco</p>
+    <button class="btn" id="claimOk">OK</button>`);
+  $('claimOk').onclick = closeDialog;
+  if ($('pVoiceWin').checked) say(`${p}! ${P.name}!`);
+};
+$('pBoardToggle').onclick = () => {
+  const on = $('pBoard').style.display === 'none';
+  $('pBoard').style.display = on ? '' : 'none';
+  $('pBoardToggle').textContent = on ? 'Nascondi i numeri usciti' : 'Mostra i numeri usciti';
+  if (on) paintBoard($('pBoard'), calledList(G));
+};
+$('pChangeCard').onclick = () => { clearInterval(pTimer); openCardSetup(); };
+$('pExit').onclick = () => {
+  if (!confirm('Uscire dalla partita? La cartella verrà cancellata da questo telefono.')) return;
+  clearInterval(pTimer); pTimer = null; store.del('tombola_player'); P = null; G = null; show('home'); refreshHome();
+};
+
+// ---------- finestre ----------
+function openDialog(html) { $('ovBox').innerHTML = html; $('ov').classList.add('on'); }
+function closeDialog() { $('ov').classList.remove('on'); }
+$('ov').onclick = e => { if (e.target === $('ov')) closeDialog(); };
+document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => show('home'));
+
+// ---------- riprendi partite salvate ----------
+function refreshHome() {
+  const sb = store.get('tombola_banco'), sp = store.get('tombola_player');
+  const alive = code => { const g = decode(code); return g && Date.now() < gameOverAt(g) + 30 * 60000; };
+  $('resumeBanco').style.display = sb && alive(sb.code) ? '' : 'none';
+  $('resumePlayer').style.display = sp && sp.card && alive(sp.code) ? '' : 'none';
+}
+$('resumeBanco').onclick = () => { B = store.get('tombola_banco'); startBanco(); };
+$('resumePlayer').onclick = () => { P = store.get('tombola_player'); G = decode(P.code); startPlay(); };
+document.addEventListener('visibilitychange', () => { if (!document.hidden && (bTimer || pTimer)) keepAwake(); });
+refreshHome();
+</script>
+</body>
+</html>

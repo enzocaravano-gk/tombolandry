@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0b3d20">
-<title>Tombola</title>
+<title>TombolAndry</title>
 <style>
   :root { --felt1: #1f7a45; --felt2: #0b3d20; --cream: #fff6dc; --red: #c62828; --ink: #2b1a10; --gold: #ffd23f; }
   * { box-sizing: border-box; }
@@ -110,7 +110,7 @@
 
 <!-- ================= HOME ================= -->
 <section class="screen on" id="home">
-  <h1>TOMBOLA</h1>
+  <h1>TombolAndry</h1>
   <p class="sub">Il banco estrae, ognuno gioca sul suo telefono</p>
   <button class="btn" id="goBanco">🎙️ SONO IL BANCO</button>
   <button class="btn red" id="goPlayer">🎟️ GIOCO CON UNA CARTELLA</button>
@@ -224,7 +224,7 @@
 
 <script>
 // =====================================================================
-//  TOMBOLA — banco + giocatori, senza server
+//  TOMBOLANDRY — tombola con banco + giocatori, senza server
 //  Tutti i telefoni con lo stesso codice calcolano la stessa estrazione:
 //  il codice contiene l'ora di inizio, l'intervallo e il "seme" dei numeri.
 // =====================================================================
@@ -365,7 +365,7 @@ $('createGame').onclick = () => {
   store.set('tombola_banco', B);
   bSpoken = 0;
   startBanco();
-  if (B.voice) say(`Benvenuti alla tombola! Il codice della partita è: ${[...code].join(', ')}`);
+  if (B.voice) say(`Benvenuti a TombolAndry! Il codice della partita è: ${[...code].join(', ')}`);
 };
 function startBanco() {
   const g = decode(B.code);
@@ -429,7 +429,7 @@ $('bSmorfia2').onchange = e => { B.smorfia = e.target.checked; store.set('tombol
 $('bRepeat').onclick = () => { const n = calledCount(B.g); if (n) { const v = B.voice; B.voice = true; announce(B.g.order[n - 1]); B.voice = v; } };
 $('bSayCode').onclick = () => say(`Il codice della partita è: ${[...B.code].join(', ')}`);
 $('bShare').onclick = async () => {
-  const txt = `Tombola! Codice partita: ${fmtCode(B.code)}\n${location.href.split('?')[0]}`;
+  const txt = `TombolAndry! Codice partita: ${fmtCode(B.code)}\n${location.href.split('?')[0]}`;
   try { if (navigator.share) await navigator.share({ text: txt }); else { await navigator.clipboard.writeText(txt); toast('Codice copiato'); } } catch (e) {}
 };
 $('bEnd').onclick = () => {

@@ -69,6 +69,17 @@
   .pickGrid button { padding: 8px 0; border-radius: 8px; border: 0; background: #0005; color: #fff; font: 700 clamp(12px, 3.4vw, 17px) Georgia, serif; cursor: pointer; }
   .pickGrid button.sel { background: var(--gold); color: #3a2500; }
   .cardNo { text-align: center; font: 700 clamp(17px, 5.2vw, 26px) Georgia, serif; white-space: nowrap; color: var(--gold); margin: 8px 0; }
+  .pickGrid button.mine { background: var(--gold); color: #3a2500; }
+  .pickGrid button.taken { opacity: .22; cursor: not-allowed; }
+  .home-h { margin: 22px 0 4px; font-size: 15px; letter-spacing: 1px; opacity: .85; text-transform: uppercase; }
+  .conn { position: fixed; top: calc(6px + env(safe-area-inset-top)); right: 8px; z-index: 5; font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 10px; background: #0008; }
+  .conn.ok { color: #7CF5C4; } .conn.ko { color: #ff8a8a; }
+  .players { display: flex; flex-direction: column; gap: 6px; }
+  .player { display: flex; justify-content: space-between; gap: 8px; padding: 8px 10px; background: #0004; border-radius: 10px; font-weight: 700; }
+  .player span { opacity: .8; font-weight: 400; }
+  .mycard { margin: 14px 0; }
+  .mycard .cardNo { margin: 4px 0; }
+  .winbar { text-align: center; font-weight: 700; color: var(--gold); min-height: 22px; }
   .incard { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 8px 10px; background: #0004; border-radius: 10px; margin: 6px 0; font-weight: 700; }
   .incard b { color: var(--gold); font: 700 20px Georgia, serif; min-width: 44px; }
   .incard .best { opacity: .8; font-size: 13px; }
@@ -110,15 +121,21 @@
 <!-- ================= HOME ================= -->
 <section class="screen on" id="home">
   <h1>TombolAndry</h1>
-  <p class="sub">Il banco estrae, ognuno gioca sul suo telefono</p>
-  <button class="btn" id="goBanco">🎙️ SONO IL BANCO</button>
-  <button class="btn red" id="goPlayer">🎟️ GIOCO CON UNA CARTELLA</button>
+  <p class="sub">La tombola sul telefono</p>
+  <div class="home-h">🌍 A distanza · banco automatico</div>
+  <button class="btn" id="goOnCreate">CREA PARTITA ONLINE</button>
+  <button class="btn red" id="goOnJoin">ENTRA IN PARTITA ONLINE</button>
+  <button class="btn ghost" id="resumeOnline" style="display:none">Riprendi la partita online</button>
+  <div class="home-h">🏠 Nella stessa stanza · senza internet</div>
+  <button class="btn ghost" id="goBanco">🎙️ SONO IL BANCO</button>
+  <button class="btn ghost" id="goPlayer">🎟️ GIOCO CON UNA CARTELLA</button>
   <button class="btn ghost" id="resumeBanco" style="display:none">Riprendi la partita come banco</button>
   <button class="btn ghost" id="resumePlayer" style="display:none">Riprendi la mia cartella</button>
   <div class="panel small" style="text-align:left">
-    Come funziona: il banco crea la partita e legge il <b>codice</b> ai giocatori. Tutti i telefoni con lo stesso
-    codice estraggono gli stessi numeri nello stesso momento, senza internet tra di loro.
-    Tieni l'ora del telefono in <b>automatico</b>.
+    <b>A distanza</b>: il banco è automatico e sta su un server. Ognuno sceglie fino a 4 cartelle; i numeri escono per tutti
+    nello stesso momento. Chi fa ambo deve tappare i numeri e dichiararlo <b>prima del numero successivo</b>.<br><br>
+    <b>Nella stessa stanza</b>: un telefono fa da banco e legge il codice. I telefoni non si collegano tra loro;
+    tieni l'ora in <b>automatico</b>.
   </div>
 </section>
 
@@ -218,6 +235,75 @@
     <button class="btn red" id="pExit">Esci dalla partita</button>
   </div>
 </section>
+
+
+<!-- ================= ONLINE: crea ================= -->
+<section class="screen" id="onCreate">
+  <h3>🌍 Nuova partita online</h3>
+  <label>Il tuo nome da gioco</label>
+  <input type="text" id="onCName" maxlength="12" autocomplete="off" placeholder="ES. MARCO">
+  <label>Un numero ogni</label>
+  <div class="seg" id="segOnInterval"></div>
+  <p class="small privacy"></p>
+  <button class="btn" id="onCreateGo">CREA PARTITA</button>
+  <button class="btn ghost" data-home>Indietro</button>
+</section>
+
+<!-- ================= ONLINE: entra ================= -->
+<section class="screen" id="onJoin">
+  <h3>🌍 Entra in una partita online</h3>
+  <label>Il tuo nome da gioco</label>
+  <input type="text" id="onJName" maxlength="12" autocomplete="off" placeholder="ES. LUCIA">
+  <label>Codice della partita</label>
+  <input type="text" id="onJCode" maxlength="5" autocomplete="off" autocapitalize="characters" placeholder="ABCDE">
+  <p class="small privacy"></p>
+  <button class="btn" id="onJoinGo">ENTRA</button>
+  <button class="btn ghost" data-home>Indietro</button>
+</section>
+
+<!-- ================= ONLINE: sala d'attesa ================= -->
+<section class="screen" id="onLobby">
+  <div class="panel">
+    <div class="small">CODICE PARTITA</div>
+    <div class="code" id="olCode"></div>
+    <button class="btn ghost" id="olShare">Invita (condividi il link)</button>
+  </div>
+  <h3>Giocatori</h3>
+  <div class="players" id="olPlayers"></div>
+  <h3>Le tue cartelle (fino a 4)</h3>
+  <p class="small">Tocca per prendere o lasciare una cartella. Quelle sbiadite sono già di altri.</p>
+  <div class="pickGrid" id="olGrid"></div>
+  <div id="olMine"></div>
+  <button class="btn" id="olStart" style="display:none">INIZIA LA PARTITA</button>
+  <p class="small" id="olWait"></p>
+  <button class="btn ghost" id="olLeave">Esci</button>
+</section>
+
+<!-- ================= ONLINE: partita ================= -->
+<section class="screen" id="onPlay">
+  <div class="panel">
+    <div class="meta"><span id="opCount"></span><span id="opNext"></span></div>
+    <div class="mid" id="opNum">–</div>
+    <div class="smorfia" id="opSmorfia"></div>
+    <div class="lastfew" id="opLast"></div>
+  </div>
+  <div class="winbar" id="opWin"></div>
+  <div class="prizes" id="opPrizes"></div>
+  <p class="small">Tappa i numeri usciti, poi premi il premio <b>prima del numero successivo</b>. Se non tappi in tempo, perdi il premio!</p>
+  <div id="opCards"></div>
+  <button class="btn ghost" id="opBoardToggle">Mostra i numeri usciti</button>
+  <div class="board" id="opBoard" style="display:none"></div>
+  <div class="panel">
+    <div class="toggle">Leggi i numeri a voce <input type="checkbox" id="opVoice" checked></div>
+    <div class="toggle">Dire anche la smorfia <input type="checkbox" id="opSmorfiaOn" checked></div>
+    <div id="opHost" style="display:none">
+      <button class="btn ghost" id="opPause">Pausa</button>
+      <button class="btn red" id="opEnd">Termina la partita</button>
+    </div>
+    <button class="btn ghost" id="opLeave">Esci</button>
+  </div>
+</section>
+<div class="conn" id="conn" style="display:none"></div>
 
 <div class="overlay" id="ov"><div class="dialog" id="ovBox"></div></div>
 <div class="toast" id="toast"></div>
@@ -623,10 +709,239 @@ function refreshHome() {
   const alive = code => { const g = decode(code); return g && Date.now() < gameOverAt(g) + 30 * 60000; };
   $('resumeBanco').style.display = sb && alive(sb.code) ? '' : 'none';
   $('resumePlayer').style.display = sp && sp.cardNo && alive(sp.code) ? '' : 'none';
+  const so = store.get('tombola_online');
+  $('resumeOnline').style.display = so && so.code ? '' : 'none';
 }
 $('resumeBanco').onclick = () => { B = store.get('tombola_banco'); startBanco(); };
 $('resumePlayer').onclick = () => { P = store.get('tombola_player'); G = decode(P.code); startPlay(); };
-document.addEventListener('visibilitychange', () => { if (!document.hidden && (bTimer || pTimer)) keepAwake(); });
+
+// =====================================================================
+//  MODALITÀ A DISTANZA — il banco automatico sta sul server
+// =====================================================================
+// indirizzo del server (si può cambiare per le prove con ?server=http://localhost:8787)
+const SERVER = (qs => qs.get('server') || 'https://tombolandry.SUBDOMAIN.workers.dev')(new URLSearchParams(location.search));
+const PRIVACY = 'Le partite a distanza passano da un server Cloudflare in Europa: nome da gioco, cartelle scelte e dichiarazioni. Nessun account, nessun dato personale. Tutto si cancella a fine partita (al massimo dopo 8 ore).';
+document.querySelectorAll('.privacy').forEach(p => p.textContent = PRIVACY);
+const myId = store.get('tombola_pid') || (() => { const id = 'p' + Math.random().toString(36).slice(2) + Date.now().toString(36); store.set('tombola_pid', id); return id; })();
+
+let O = null, ows = null, oRetry = 0, oTimer = null, oOffset = 0, oSpoken = 0, oPending = null;
+const saveOnline = () => store.set('tombola_online', { code: O.code, name: O.name, hostToken: O.hostToken, marks: O.marks });
+const serverNow = () => Date.now() + oOffset;
+
+let onInterval = 10;
+segment($('segOnInterval'), INTERVALS, v => v + ' s', onInterval, v => onInterval = v);
+$('goOnCreate').onclick = () => { $('onCName').value = store.get('tombola_name') || ''; show('onCreate'); };
+$('goOnJoin').onclick = () => { $('onJName').value = store.get('tombola_name') || ''; show('onJoin'); };
+
+$('onCreateGo').onclick = async () => {
+  const name = $('onCName').value.trim().toUpperCase();
+  if (!name) { toast('Scrivi il tuo nome da gioco'); return; }
+  store.set('tombola_name', name);
+  $('onCreateGo').disabled = true;
+  try {
+    const r = await fetch(SERVER + '/api/new', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ interval: onInterval }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'errore');
+    startOnline({ code: d.code, name, hostToken: d.hostToken, marks: {} });
+  } catch (e) { toast('Server non raggiungibile, riprova tra poco'); }
+  $('onCreateGo').disabled = false;
+};
+$('onJoinGo').onclick = () => {
+  const name = $('onJName').value.trim().toUpperCase();
+  const code = $('onJCode').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!name) { toast('Scrivi il tuo nome da gioco'); return; }
+  if (code.length !== 5) { toast('Il codice ha 5 caratteri'); return; }
+  store.set('tombola_name', name);
+  const old = store.get('tombola_online');
+  startOnline({ code, name, hostToken: old && old.code === code ? old.hostToken : null, marks: old && old.code === code ? old.marks : {} });
+};
+$('resumeOnline').onclick = () => startOnline(store.get('tombola_online'));
+
+function startOnline(sess) {
+  O = { ...sess, phase: 'lobby', called: [], nextAt: 0, players: [], taken: [], prizes: {}, myCards: [], host: false, interval: 10, joined: false };
+  O.marks = O.marks || {};
+  saveOnline();
+  oSpoken = -1;
+  $('olCode').textContent = O.code;
+  keepAwake();
+  connect();
+  clearInterval(oTimer); oTimer = setInterval(tickOnline, 300);
+}
+
+function connect() {
+  if (ows) { ows.onclose = null; try { ows.close(); } catch (e) {} }
+  setConn(false, 'collegamento…');
+  ows = new WebSocket(SERVER.replace(/^http/, 'ws') + `/api/room/${O.code}/ws`);
+  ows.onopen = () => { oRetry = 0; ows.send(JSON.stringify({ t: 'hello', id: myId, name: O.name, hostToken: O.hostToken })); };
+  ows.onmessage = e => onMsg(JSON.parse(e.data));
+  ows.onclose = ev => {
+    if (!O) return;
+    if (ev.code === 1000 && /chiusa|finita/i.test(ev.reason || '')) { setConn(false, 'partita chiusa'); return; }
+    if (!O.joined && oRetry >= 2) { toast('Partita non trovata: controlla il codice'); leaveOnline(true); return; }
+    setConn(false, 'linea persa, riprovo…');
+    setTimeout(() => O && connect(), Math.min(10000, 1000 * 2 ** oRetry++));
+  };
+}
+function setConn(ok, txt) { const c = $('conn'); c.style.display = O ? '' : 'none'; c.className = 'conn ' + (ok ? 'ok' : 'ko'); c.textContent = ok ? '● online' : '● ' + txt; }
+const osend = obj => { if (ows && ows.readyState === 1) ows.send(JSON.stringify(obj)); else toast('Non sei collegato, riprovo…'); };
+
+function onMsg(m) {
+  if (m.serverNow) oOffset = m.serverNow - Date.now();
+  if (m.t === 'state') {
+    O.joined = true; setConn(true);
+    Object.assign(O, { phase: m.phase, called: m.called, nextAt: m.nextAt, interval: m.interval, players: m.players, prizes: m.prizes, myCards: m.you.cards, host: m.you.host });
+    if (oSpoken < 0) oSpoken = O.called.length;      // appena entrati non si rileggono i numeri vecchi
+    renderOnline();
+  } else if (m.t === 'players') {
+    O.players = m.players; O.taken = m.taken; renderLobby();
+  } else if (m.t === 'phase') {
+    O.phase = m.phase; O.nextAt = m.nextAt; renderOnline();
+    if (m.phase === 'running' && O.called.length === 0 && $('opVoice').checked) say('Si comincia!');
+  } else if (m.t === 'draw') {
+    O.called.push(m.num); O.nextAt = m.nextAt; O.phase = m.phase;
+    if (O.called.length > oSpoken) { oSpoken = O.called.length; if ($('opVoice').checked) say($('opSmorfiaOn').checked ? `${m.num}. ${SMORFIA[m.num]}` : `${m.num}`); }
+    renderOnline();
+  } else if (m.t === 'prize') {
+    O.prizes[m.prize] = m.winners; O.phase = m.phase;
+    const who = m.winners.map(w => `${w.name} (cartella ${w.card})`).join(' e ');
+    openDialog(`<h2>${m.prize}!</h2><div style="font-size:22px;font-weight:700">${esc(who)}</div><button class="btn" id="przOk">OK</button>`);
+    $('przOk').onclick = closeDialog;
+    say(`${m.prize}! ${m.winners.map(w => w.name).join(' e ')}!`, false);
+    renderOnline();
+  } else if (m.t === 'claim') {
+    oPending = null;
+    toast(m.ok ? `✅ ${m.prize}: ${m.msg}` : `❌ ${m.msg}`);
+  } else if (m.t === 'error') {
+    toast(m.msg);
+  }
+}
+
+// ---------- sala d'attesa ----------
+function renderOnline() {
+  if (!O) return;
+  if (O.phase === 'lobby') { renderLobby(); if (!$('onLobby').classList.contains('on')) show('onLobby'); }
+  else { renderPlay(); if (!$('onPlay').classList.contains('on')) show('onPlay'); }
+}
+function renderLobby() {
+  $('olPlayers').innerHTML = O.players.map(p => `<div class="player">${p.host ? '👑 ' : ''}${esc(p.name)}<span>${p.cards.length ? 'cartelle ' + p.cards.join(', ') : 'sceglie…'}</span></div>`).join('');
+  const mine = new Set(O.myCards), taken = new Set(O.taken.filter(n => !mine.has(n)));
+  let html = '';
+  for (let s = 1; s <= 15; s++) {
+    html += `<span>SERIE ${s}</span>`;
+    for (let i = 1; i <= 6; i++) { const no = (s - 1) * 6 + i; html += `<button data-no="${no}" class="${mine.has(no) ? 'mine' : taken.has(no) ? 'taken' : ''}">${no}</button>`; }
+  }
+  $('olGrid').innerHTML = html;
+  $('olMine').innerHTML = O.myCards.map(no => `<div class="mycard"><div class="cardNo">${cardLabel(no)}</div><div class="card" data-preview="${no}"></div></div>`).join('');
+  O.myCards.forEach(no => renderCard(document.querySelector(`[data-preview="${no}"]`), cardGrid(no)));
+  $('olStart').style.display = O.host ? '' : 'none';
+  const host = O.players.find(p => p.host);
+  $('olWait').textContent = O.host ? 'Quando tutti hanno scelto, inizia tu.' : `Aspetta che ${host ? host.name : 'chi ha creato la partita'} inizi.`;
+}
+$('olGrid').onclick = e => {
+  const b = e.target.closest('button'); if (!b || b.classList.contains('taken')) return;
+  const no = +b.dataset.no;
+  let cards = O.myCards.includes(no) ? O.myCards.filter(n => n !== no) : [...O.myCards, no];
+  if (cards.length > 4) { toast('Al massimo 4 cartelle'); return; }
+  O.myCards = cards.sort((a, b) => a - b);
+  osend({ t: 'cards', cards: O.myCards });
+  renderLobby();
+};
+$('olStart').onclick = () => osend({ t: 'start' });
+$('olShare').onclick = async () => {
+  const link = `${location.origin}${location.pathname}?stanza=${O.code}`;
+  const txt = `Giochiamo a TombolAndry! Codice ${O.code}\n${link}`;
+  try { if (navigator.share) await navigator.share({ text: txt }); else { await navigator.clipboard.writeText(txt); toast('Link copiato'); } } catch (e) {}
+};
+
+// ---------- partita ----------
+function renderPlay() {
+  const n = O.called.length, last = O.called[n - 1];
+  const won = PRIZES.map(([p]) => p).filter(p => O.prizes[p]);
+  $('opWin').textContent = won.length ? won.map(p => `${p}: ${O.prizes[p].map(w => w.name).join(', ')}`).join(' · ') : '';
+  $('opPrizes').innerHTML = PRIZES.map(([p]) => `<button data-p="${p}" class="${O.prizes[p] ? 'done' : ''}" ${O.prizes[p] ? 'disabled' : ''}>${p}${O.prizes[p] ? `<small>${esc(O.prizes[p].map(w => w.name).join(', '))}</small>` : ''}</button>`).join('');
+  // cartelle (si ridisegnano solo se cambiano, per non perdere il tocco)
+  const key = O.myCards.join(',');
+  if ($('opCards').dataset.key !== key) {
+    $('opCards').dataset.key = key;
+    $('opCards').innerHTML = O.myCards.length ? O.myCards.map(no => `<div class="mycard"><div class="cardNo">${cardLabel(no)}</div><div class="card" data-card="${no}"></div></div>`).join('')
+      : '<p class="small">Non hai cartelle in questa partita: puoi guardare.</p>';
+  }
+  O.myCards.forEach(no => renderCard(document.querySelector(`[data-card="${no}"]`), cardGrid(no), { marks: O.marks[no] || [] }));
+  $('opHost').style.display = O.host && O.phase !== 'ended' ? '' : 'none';
+  $('opPause').textContent = O.phase === 'paused' ? 'Riprendi' : 'Pausa';
+  if ($('opBoard').style.display !== 'none') paintBoard($('opBoard'), O.called);
+  tickOnline();
+}
+function tickOnline() {
+  if (!O || !$('onPlay').classList.contains('on')) return;
+  const n = O.called.length, last = O.called[n - 1];
+  $('opCount').textContent = O.phase === 'ended' ? 'PARTITA FINITA' : O.phase === 'paused' ? 'IN PAUSA' : `ESTRATTI ${n}/90`;
+  $('opNext').textContent = O.phase === 'running' ? `prossimo tra ${mmss(O.nextAt - serverNow())}` : '';
+  $('opNum').textContent = last || '–';
+  $('opSmorfia').textContent = last ? SMORFIA[last] : '';
+  $('opLast').textContent = O.called.slice(-6, -1).reverse().join(' · ');
+}
+$('opCards').onclick = e => {
+  const cell = e.target.closest('.cell.num'), box = e.target.closest('[data-card]');
+  if (!cell || !box) return;
+  const no = +box.dataset.card, n = +cell.dataset.n;
+  const marks = O.marks[no] = O.marks[no] || [];
+  if (marks.includes(n)) { O.marks[no] = marks.filter(x => x !== n); cell.classList.remove('marked'); saveOnline(); return; }
+  if (!O.called.includes(n)) {
+    cell.classList.remove('bad'); void cell.offsetWidth; cell.classList.add('bad');
+    setTimeout(() => cell.classList.remove('bad'), 400);
+    toast(`Il ${n} non è ancora uscito`); return;
+  }
+  marks.push(n); cell.classList.add('marked'); saveOnline();
+  try { navigator.vibrate && navigator.vibrate(15); } catch (e) {}
+};
+// sceglie cosa dichiarare: solo numeri tappati e usciti, meglio se completati dall'ultimo numero
+function findClaim(k) {
+  const called = new Set(O.called), last = O.called[O.called.length - 1];
+  let fallback = null;
+  for (const no of O.myCards) {
+    const g = cardGrid(no), marked = (O.marks[no] || []).filter(n => called.has(n));
+    if (k === 15) { if (cardNumbers(g).every(n => marked.includes(n))) return { card: no, nums: cardNumbers(g) }; continue; }
+    for (const row of g) {
+      const hit = row.filter(n => n > 0 && marked.includes(n));
+      if (hit.length < k) continue;
+      if (hit.includes(last)) return { card: no, nums: [last, ...hit.filter(n => n !== last)].slice(0, k) };
+      fallback = fallback || { card: no, nums: hit.slice(-k) };
+    }
+  }
+  return fallback;
+}
+$('opPrizes').onclick = e => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  const [p, k] = PRIZES.find(x => x[0] === b.dataset.p);
+  if (O.phase === 'lobby') return;
+  const c = findClaim(k);
+  if (!c) { toast(k === 15 ? 'Per la tombola devono essere tappati tutti i 15 numeri' : `Per ${p.toLowerCase()} servono ${k} numeri tappati sulla stessa riga`); return; }
+  oPending = p;
+  osend({ t: 'claim', prize: p, card: c.card, nums: c.nums });
+};
+$('opBoardToggle').onclick = () => {
+  const on = $('opBoard').style.display === 'none';
+  if (on) buildBoard($('opBoard'));
+  $('opBoard').style.display = on ? '' : 'none';
+  $('opBoardToggle').textContent = on ? 'Nascondi i numeri usciti' : 'Mostra i numeri usciti';
+  if (on) paintBoard($('opBoard'), O.called);
+};
+$('opPause').onclick = () => osend({ t: O.phase === 'paused' ? 'resume' : 'pause' });
+$('opEnd').onclick = () => { if (confirm('Terminare la partita per tutti?')) osend({ t: 'end' }); };
+function leaveOnline(silent) {
+  clearInterval(oTimer); oTimer = null;
+  if (ows) { ows.onclose = null; try { ows.close(); } catch (e) {} ows = null; }
+  if (!silent) store.del('tombola_online');
+  O = null; $('conn').style.display = 'none';
+  show('home'); refreshHome();
+}
+$('opLeave').onclick = () => { if (confirm('Uscire dalla partita?')) leaveOnline(); };
+$('olLeave').onclick = () => leaveOnline();
+// link d'invito: ?stanza=ABCDE
+(() => { const code = new URLSearchParams(location.search).get('stanza'); if (code) { $('onJCode').value = code.toUpperCase().slice(0, 5); $('onJName').value = store.get('tombola_name') || ''; show('onJoin'); } })();
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden && (bTimer || pTimer || oTimer)) keepAwake(); });
 refreshHome();
 </script>
 </body>

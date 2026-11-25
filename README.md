@@ -1,6 +1,10 @@
 # TombolAndry
 
-La tombola sul telefono: un dispositivo fa da **banco** e chiama i numeri a voce, ognuno gioca con la sua **cartella** sul proprio telefono.
+La tombola sul telefono, in due modi:
+
+**A distanza** — il banco è automatico e sta su un piccolo server (Cloudflare, dati in Europa, cartella `server` del progetto di sviluppo). Chi crea la partita invita gli altri con un link; ognuno sceglie fino a 4 cartelle. Bisogna tappare i numeri e dichiarare il premio prima del numero successivo: chi si distrae perde il premio. Nessun account; la partita si cancella da sola.
+
+**Nella stessa stanza** — un dispositivo fa da **banco** e chiama i numeri a voce, ognuno gioca con la sua **cartella** sul proprio telefono, senza internet tra i telefoni.
 
 - Il banco crea la partita e ottiene un codice di 7 lettere da dare ai giocatori
 - Tutti i telefoni con lo stesso codice estraggono gli stessi numeri nello stesso momento: non serve nessun server e non passa niente da internet tra i telefoni (tenete l'ora del telefono in automatico)
@@ -13,4 +17,4 @@ La tombola sul telefono: un dispositivo fa da **banco** e chiama i numeri a voce
 
 Per giocare in locale basta aprire `index.html` nel browser.
 
-Nessuna risorsa esterna: niente font, script o librerie caricati da altri server.
+Nessuna risorsa esterna: niente font, script o librerie caricati da altri server. La sola connessione è quella al server delle partite a distanza.

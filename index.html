@@ -719,7 +719,7 @@ $('resumePlayer').onclick = () => { P = store.get('tombola_player'); G = decode(
 //  MODALITÀ A DISTANZA — il banco automatico sta sul server
 // =====================================================================
 // indirizzo del server (si può cambiare per le prove con ?server=http://localhost:8787)
-const SERVER = (qs => qs.get('server') || 'https://tombolandry.SUBDOMAIN.workers.dev')(new URLSearchParams(location.search));
+const SERVER = (qs => qs.get('server') || 'https://tombolandry.enzocaravano.workers.dev')(new URLSearchParams(location.search));
 const PRIVACY = 'Le partite a distanza passano da un server Cloudflare in Europa: nome da gioco, cartelle scelte e dichiarazioni. Nessun account, nessun dato personale. Tutto si cancella a fine partita (al massimo dopo 8 ore).';
 document.querySelectorAll('.privacy').forEach(p => p.textContent = PRIVACY);
 const myId = store.get('tombola_pid') || (() => { const id = 'p' + Math.random().toString(36).slice(2) + Date.now().toString(36); store.set('tombola_pid', id); return id; })();
